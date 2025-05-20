@@ -16,6 +16,17 @@ if (!PULSECHAIN_RPC || !PRIVATE_KEY || !WALLET_TO_MONITOR) {
 const provider = new ethers.JsonRpcProvider(PULSECHAIN_RPC);
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
+// Memory management function
+function performMemoryCleanup() {
+    if (global.gc) {
+        global.gc();
+        console.log(`Memory cleanup performed at ${new Date().toISOString()}`);
+    }
+}
+
+// Set up periodic memory cleanup (every 5 minutes)
+setInterval(performMemoryCleanup, 5 * 60 * 1000);
+
 async function getMinGasPrice() {
     try {
         const feeData = await provider.getFeeData();
