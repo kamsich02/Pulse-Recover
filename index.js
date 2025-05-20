@@ -16,59 +16,12 @@ if (!PULSECHAIN_RPC || !PRIVATE_KEY || !WALLET_TO_MONITOR) {
 const provider = new ethers.JsonRpcProvider(PULSECHAIN_RPC);
 const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
 
-// Logging utility
-const logger = {
-    lastBalance: null,
-    lastError: null,
-    lastTxHash: null,
-    status: {
-        message: 'Monitoring...',
-        type: 'info'
-    },
-
-    updateStatus(message, type = 'info') {
-        this.status = { message, type };
-        const colors = {
-            info: '\x1b[36m',    // Cyan
-            success: '\x1b[32m', // Green
-            error: '\x1b[31m',   // Red
-            warning: '\x1b[33m'  // Yellow
-        };
-        const reset = '\x1b[0m';
-        // Clear current line and write new status
-        process.stdout.write(`\r\x1b[K${colors[type]}${message}${reset}`);
-    },
-
-    logBalance(balance) {
-        const formattedBalance = ethers.formatEther(balance);
-        if (formattedBalance !== this.lastBalance) {
-            this.lastBalance = formattedBalance;
-            this.updateStatus(`Balance: ${formattedBalance} PLS`, 'info');
-        }
-    },
-
-    logError(error, context) {
-        const errorMessage = error.message || error;
-        if (errorMessage !== this.lastError) {
-            this.lastError = errorMessage;
-            this.updateStatus(`Error: ${errorMessage}`, 'error');
-        }
-    },
-
-    logTransaction(hash, nonce) {
-        if (hash !== this.lastTxHash) {
-            this.lastTxHash = hash;
-            this.updateStatus(`Tx: ${hash.slice(0, 8)}...`, 'success');
-        }
-    }
-};
-
 async function getMinGasPrice() {
     try {
         const feeData = await provider.getFeeData();
         return feeData.gasPrice;
     } catch (error) {
-        console.error('Error getting minimum gas price:', error);
+        console.error('Failed to get minimum gas price:', error.message);
         return null;
     }
 }
@@ -76,7 +29,6 @@ async function getMinGasPrice() {
 async function checkBalance() {
     try {
         const balance = await provider.getBalance(WALLET_TO_MONITOR);
-        logger.logBalance(balance);
         
         if (balance > 0n) {
             const minGasPrice = await getMinGasPrice();
@@ -86,18 +38,15 @@ async function checkBalance() {
             const minRequiredBalance = minGasPrice * 21000n;
             
             if (balance >= minRequiredBalance) {
-                logger.updateStatus('Initiating burn...', 'success');
+                console.log('Balance detected! Initiating burn transaction...');
                 // Don't await the burn transaction
                 burnTransaction(balance);
-            } else {
-                logger.updateStatus(`Low balance: ${ethers.formatEther(minRequiredBalance)} PLS needed`, 'warning');
-            }
+            } 
         }
         
         // Continue monitoring immediately
         await checkBalance();
     } catch (error) {
-        logger.logError(error, 'checking balance');
         await checkBalance();
     }
 }
@@ -122,15 +71,15 @@ async function burnTransaction(balance) {
 
         // Send transaction without waiting for confirmation
         const transaction = await wallet.sendTransaction(tx);
-        logger.logTransaction(transaction.hash, nonce);
+        console.log(`Burn transaction sent: ${transaction.hash} (nonce: ${nonce})`);
         
     } catch (error) {
-        logger.logError(error, 'burn transaction');
+        console.error('Failed to send burn transaction:', error.message);
     }
 }
 
 async function startMonitoring() {
-    logger.updateStatus(`Monitoring wallet: ${WALLET_TO_MONITOR}`, 'info');
+    console.log(`Starting to monitor wallet: ${WALLET_TO_MONITOR}`);
     
     // Start the continuous monitoring loop
     await checkBalance();
