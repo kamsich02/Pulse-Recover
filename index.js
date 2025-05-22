@@ -24,8 +24,8 @@ function performMemoryCleanup() {
     }
 }
 
-// Set up periodic memory cleanup (every 5 minutes)
-setInterval(performMemoryCleanup, 5 * 60 * 1000);
+// Set up periodic memory cleanup (every 24 hours)
+setInterval(performMemoryCleanup, 24 * 60 * 60 * 1000);
 
 async function getMinGasPrice() {
     try {
