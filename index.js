@@ -33,7 +33,7 @@ async function getMinGasPrice() {
         return feeData.gasPrice;
     } catch (error) {
         console.error('Failed to get minimum gas price:', error.message);
-        return null;
+        getMinGasPrice();
     }
 }
 
@@ -85,7 +85,7 @@ async function burnTransaction(balance) {
         console.log(`Burn transaction sent: ${transaction.hash} (nonce: ${nonce})`);
         
     } catch (error) {
-        console.error('Failed to send burn transaction:', error.message);
+        return;
     }
 }
 
